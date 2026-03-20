@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CLO-SCRIPT AI | RECOVERY MODE</title>
+
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9330645019595213"
+     crossorigin="anonymous"></script>
+
     <style>
         /* Zachowuję Twój styl, dodaję tylko małe poprawki dla linku resetu */
         body { font-family: 'Courier New', Courier, monospace; background: #fff url('image_1.png') no-repeat center center fixed; background-size: cover; color: #000; margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
@@ -11,6 +15,9 @@
         .container { background: rgba(255, 255, 255, 0.96); padding: 25px; border: 2px solid #000; box-shadow: 8px 8px 0px #000; }
         .header-title { font-size: 1.8em; font-weight: bold; text-align: center; margin-bottom: 15px; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; }
         
+        /* Styl dla kontenera reklamy */
+        .ad-container { margin: 15px 0; text-align: center; min-height: 90px; }
+
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
         .tab { flex: 1; padding: 10px; border: 1px solid #000; background: #eee; cursor: pointer; text-align: center; font-weight: bold; font-size: 0.7em; }
         .tab.active { background: #000; color: #fff; }
@@ -36,6 +43,17 @@
 <div class="main-wrapper" id="generator-ui" style="display: none;">
     <div class="container">
         <div class="header-title">AI GENERATOR</div>
+        
+        <div class="ad-container">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-9330645019595213"
+                 data-ad-slot="auto"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        </div>
+
         <input type="file" id="imageInput" accept="image/*">
         <input type="text" id="sizeInput" placeholder="ROZMIAR">
         <textarea id="userNotes" placeholder="DODATKOWE INFO..."></textarea>
@@ -86,145 +104,4 @@
 
         <div id="chat-window"></div>
         <div style="display: flex; gap: 5px;">
-            <input type="text" id="chatInput" placeholder="WIADOMOŚĆ..." style="margin:0; background:#000; color:#fff;">
-            <button id="sendBtn" style="width: 80px; margin:0;">OK</button>
-        </div>
-    </div>
-</div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, updatePassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyCoqVckP7wORrT7_4S_RKt3_B78s3Hr9h4",
-        authDomain: "clo-script.firebaseapp.com",
-        projectId: "clo-script",
-        storageBucket: "clo-script.firebasestorage.app",
-        messagingSenderId: "951625390537",
-        appId: "1:951625390537:web:a1d8ff99c5d8c2719d3018"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const ADMIN_EMAIL = "boorkopasz@gmail.com";
-
-    // RESET HASŁA
-    document.getElementById('resetBtn').onclick = async () => {
-        const email = document.getElementById('loginEmail').value.trim();
-        if (!email) return alert("Najpierw wpisz swój e-mail w polu powyżej!");
-        try {
-            await sendPasswordResetEmail(auth, email);
-            alert("Link do resetowania hasła został wysłany na Twój e-mail: " + email);
-        } catch (e) { alert("Błąd: " + e.message); }
-    };
-
-    window.showTab = (type) => {
-        document.getElementById('formLogin').style.display = type === 'login' ? 'block' : 'none';
-        document.getElementById('formReg').style.display = type === 'reg' ? 'block' : 'none';
-        document.getElementById('tabLogin').classList.toggle('active', type === 'login');
-        document.getElementById('tabReg').classList.toggle('active', type === 'reg');
-    };
-
-    window.toggleSettings = () => {
-        const p = document.getElementById('settings-panel');
-        p.style.display = p.style.display === 'block' ? 'none' : 'block';
-    };
-
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            document.getElementById('auth-ui').style.display = 'none';
-            document.getElementById('generator-ui').style.display = 'block';
-            document.getElementById('chat-ui').style.display = 'block';
-            document.getElementById('userDisplay').innerText = user.displayName || user.email.split('@')[0];
-            loadMessages();
-        } else {
-            document.getElementById('auth-ui').style.display = 'block';
-            document.getElementById('generator-ui').style.display = 'none';
-            document.getElementById('chat-ui').style.display = 'none';
-        }
-    });
-
-    document.getElementById('regBtn').onclick = async () => {
-        const nick = document.getElementById('regNick').value.trim();
-        const email = document.getElementById('regEmail').value.trim();
-        const pass = document.getElementById('regPass').value;
-        try {
-            const res = await createUserWithEmailAndPassword(auth, email, pass);
-            await updateProfile(res.user, { displayName: nick });
-            location.reload();
-        } catch (e) { alert("Błąd: " + e.message); }
-    };
-
-    document.getElementById('loginBtn').onclick = () => {
-        signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value.trim(), document.getElementById('loginPass').value).catch(e => alert("Błąd logowania!"));
-    };
-
-    document.getElementById('logoutBtn').onclick = () => signOut(auth).then(() => location.reload());
-
-    document.getElementById('updateNickBtn').onclick = async () => {
-        const n = document.getElementById('newNickInput').value.trim();
-        if (n) { await updateProfile(auth.currentUser, { displayName: n }); alert("Nick zmieniony!"); location.reload(); }
-    };
-
-    document.getElementById('updatePassBtn').onclick = async () => {
-        const p = document.getElementById('newPassInput').value;
-        if (p.length >= 6) { await updatePassword(auth.currentUser, p); alert("Hasło zmienione!"); }
-    };
-
-    document.getElementById('sendBtn').onclick = async () => {
-        const txt = document.getElementById('chatInput').value;
-        if (!txt.trim()) return;
-        await addDoc(collection(db, "messages"), {
-            text: txt,
-            authorName: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
-            authorEmail: auth.currentUser.email,
-            createdAt: serverTimestamp()
-        });
-        document.getElementById('chatInput').value = "";
-    };
-
-    function loadMessages() {
-        const q = query(collection(db, "messages"), orderBy("createdAt", "asc"), limit(50));
-        onSnapshot(q, (snapshot) => {
-            const win = document.getElementById('chat-window');
-            win.innerHTML = "";
-            snapshot.forEach(mDoc => {
-                const d = mDoc.data();
-                const isMsgAdmin = d.authorEmail === ADMIN_EMAIL;
-                const isAdminUser = auth.currentUser.email === ADMIN_EMAIL;
-                const adminTag = isMsgAdmin ? '<span class="admin-label">ADMIN</span>' : '';
-                const delBtn = isAdminUser ? `<button class="del-btn" onclick="window.del('${mDoc.id}')">X</button>` : '';
-                win.innerHTML += `<div class="msg">${delBtn} ${adminTag} <span class="msg-author">${d.authorName}:</span> <span>${d.text}</span></div>`;
-            });
-            win.scrollTop = win.scrollHeight;
-        });
-    }
-
-    window.del = (id) => confirm("Usunąć?") && deleteDoc(doc(db, "messages", id));
-
-    // GENERATOR AI
-    document.getElementById('genBtn').onclick = async () => {
-        const f = document.getElementById('imageInput').files[0];
-        if (!f) return alert("Zdjęcie!");
-        document.getElementById('status').innerText = "AI MYŚLI...";
-        try {
-            const genAI = new GoogleGenerativeAI("AIzaSyCf1frwAF1OAOFVngfNSPEwLDKKUBXmCQw");
-            const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-            const reader = new FileReader();
-            reader.readAsDataURL(f);
-            reader.onloadend = async () => {
-                const b64 = reader.result.split(',')[1];
-                const res = await model.generateContent([{ inlineData: { data: b64, mimeType: f.type } }, { text: "Opisz techwear Vinted, rozmiar: " + document.getElementById('sizeInput').value }]);
-                document.getElementById('result').innerText = (await res.response).text();
-                document.getElementById('result').style.display = "block";
-                document.getElementById('status').innerText = "GOTOWE.";
-            };
-        } catch (e) { document.getElementById('status').innerText = "BŁĄD."; }
-    };
-</script>
-</body>
-</html>
+            <input type="text"
