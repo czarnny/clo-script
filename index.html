@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CLO-SCRIPT AI | RECOVERY</title>
+    <title>CLO-SCRIPT AI</title>
     
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9330645019595213"
@@ -28,7 +28,7 @@
         .admin-label { color: #ff0000; font-weight: bold; font-size: 0.7em; border: 1px solid #ff0000; padding: 0 4px; margin-right: 5px; }
         
         #result { margin-top: 15px; padding: 15px; border: 1px solid #000; background: #f9f9f9; white-space: pre-wrap; display: none; font-size: 0.8em; }
-        .ad-box { margin: 10px 0; text-align: center; border: 1px dashed #ccc; min-height: 50px; }
+        .forgot-pass { display: block; text-align: center; font-size: 0.65em; margin-top: 10px; cursor: pointer; text-decoration: underline; color: #555; }
     </style>
 </head>
 <body>
@@ -36,7 +36,7 @@
 <!-- PANEL LOGOWANIA -->
 <div class="main-wrapper" id="auth-ui">
     <div class="container">
-        <div class="header-title">CLO-SCRIPT LOGIN</div>
+        <div class="header-title">CLO-SCRIPT</div>
         <div class="tabs">
             <div id="tabLogin" class="tab active" onclick="showTab('login')">WEJŚCIE</div>
             <div id="tabReg" class="tab" onclick="showTab('reg')">REJESTRACJA</div>
@@ -45,6 +45,7 @@
             <input type="email" id="loginEmail" placeholder="TWÓJ GMAIL">
             <input type="password" id="loginPass" placeholder="HASŁO">
             <button id="loginBtn">ZALOGUJ</button>
+            <span class="forgot-pass" id="resetBtn">ZAPOMNIAŁEŚ HASŁA?</span>
         </div>
         <div id="formReg" style="display: none;">
             <input type="text" id="regNick" placeholder="TWÓJ NICK">
@@ -58,11 +59,7 @@
 <!-- GENERATOR -->
 <div class="main-wrapper" id="generator-ui" style="display: none;">
     <div class="container">
-        <div class="header-title">GENERATOR AI</div>
-        <div class="ad-box">
-            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9330645019595213" data-ad-slot="auto" data-ad-format="auto" data-full-width-responsive="true"></ins>
-            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-        </div>
+        <div class="header-title">CLO-SCRIPT</div>
         <input type="file" id="imageInput" accept="image/*">
         <input type="text" id="sizeInput" placeholder="ROZMIAR">
         <textarea id="userNotes" placeholder="DODATKOWE INFO..."></textarea>
@@ -89,7 +86,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
     import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
     import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
@@ -106,7 +103,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Przełączanie zakładkek
     window.showTab = (t) => {
         document.getElementById('formLogin').style.display = t === 'login' ? 'block' : 'none';
         document.getElementById('formReg').style.display = t === 'reg' ? 'block' : 'none';
@@ -114,7 +110,6 @@
         document.getElementById('tabReg').classList.toggle('active', t === 'reg');
     };
 
-    // Stan Autoryzacji
     onAuthStateChanged(auth, (user) => {
         if (user) {
             document.getElementById('auth-ui').style.display = 'none';
@@ -129,7 +124,6 @@
         }
     });
 
-    // Rejestracja
     document.getElementById('regBtn').onclick = async () => {
         const nick = document.getElementById('regNick').value;
         const email = document.getElementById('regEmail').value;
@@ -137,23 +131,28 @@
         try {
             const res = await createUserWithEmailAndPassword(auth, email, pass);
             await updateProfile(res.user, { displayName: nick });
-            alert("Konto założone! Możesz się zalogować.");
             location.reload();
-        } catch (e) { alert("BŁĄD REJESTRACJI: " + e.message); }
+        } catch (e) { alert("BŁĄD: " + e.message); }
     };
 
-    // Logowanie
     document.getElementById('loginBtn').onclick = async () => {
         const email = document.getElementById('loginEmail').value;
         const pass = document.getElementById('loginPass').value;
+        try { await signInWithEmailAndPassword(auth, email, pass); } 
+        catch (e) { alert("BŁĄD LOGOWANIA: " + e.message); }
+    };
+
+    document.getElementById('resetBtn').onclick = async () => {
+        const email = document.getElementById('loginEmail').value.trim();
+        if (!email) return alert("Wpisz swój e-mail, aby otrzymać link do resetu!");
         try {
-            await signInWithEmailAndPassword(auth, email, pass);
-        } catch (e) { alert("BŁĄD LOGOWANIA: " + e.message); }
+            await sendPasswordResetEmail(auth, email);
+            alert("Wysłano link do resetu hasła na e-mail: " + email);
+        } catch (e) { alert("BŁĄD: " + e.message); }
     };
 
     document.getElementById('logoutBtn').onclick = () => signOut(auth).then(() => location.reload());
 
-    // Czat
     document.getElementById('sendBtn').onclick = async () => {
         const msg = document.getElementById('chatInput').value;
         if (!msg.trim()) return;
@@ -180,7 +179,6 @@
         });
     }
 
-    // Generator AI
     document.getElementById('genBtn').onclick = async () => {
         const file = document.getElementById('imageInput').files[0];
         if (!file) return alert("Wybierz zdjęcie!");
