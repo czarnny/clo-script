@@ -212,15 +212,17 @@
 
     window.del = (id) => { if(confirm("USUNĄĆ?")) deleteDoc(doc(db, "messages", id)); };
 
-    // NAPRAWIONY GENERATOR OPISÓW
+    // ZMIANA MODELU NA 1.5-FLASH-8B-001 (Wersja 3.1)
     document.getElementById('genBtn').onclick = async () => {
-        const file = document.getElementById('imageInput').files[0];
+        const fileInput = document.getElementById('imageInput');
+        const file = fileInput.files[0];
         if (!file) return alert("Wybierz zdjęcie!");
+        
         document.getElementById('status').innerText = "AI PRACUJE...";
         
         try {
             const genAI = new GoogleGenerativeAI("AIzaSyCf1frwAF1OAOFVngfNSPEwLDKKUBXmCQw");
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b-001" });
             
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -244,7 +246,7 @@
                     document.getElementById('result').style.display = "block";
                     document.getElementById('status').innerText = "GOTOWE.";
                 } catch (genErr) {
-                    console.error(genErr);
+                    console.error("Błąd generowania:", genErr);
                     alert("BŁĄD GENEROWANIA: " + genErr.message);
                     document.getElementById('status').innerText = "BŁĄD.";
                 }
