@@ -4,36 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CLO-SCRIPT AI</title>
-    
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9330645019595213"
-     crossorigin="anonymous"></script>
-
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9330645019595213" crossorigin="anonymous"></script>
     <style>
         body { font-family: 'Courier New', Courier, monospace; background: #fff url('image_1.png') no-repeat center center fixed; background-size: cover; color: #000; margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .main-wrapper { width: 100%; max-width: 600px; margin-bottom: 25px; }
         .container { background: rgba(255, 255, 255, 0.96); padding: 25px; border: 2px solid #000; box-shadow: 8px 8px 0px #000; }
         .header-title { font-size: 1.8em; font-weight: bold; text-align: center; margin-bottom: 15px; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; }
-        
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
         .tab { flex: 1; padding: 10px; border: 1px solid #000; background: #eee; cursor: pointer; text-align: center; font-weight: bold; font-size: 0.7em; }
         .tab.active { background: #000; color: #fff; }
-
         input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #000; box-sizing: border-box; font-family: 'Courier New'; outline: none; }
         button { width: 100%; background: #000; color: #fff; border: 1px solid #000; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        
         #chat-window { height: 300px; background: #000; color: #fff; padding: 15px; overflow-y: auto; border: 1px solid #000; margin-bottom: 10px; }
-        .msg { margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px; font-size: 0.85em; }
+        .msg { margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px; font-size: 0.85em; position: relative; }
         .msg-author { font-weight: bold; color: #00ff00; margin-right: 5px; }
         .admin-label { color: #ff0000; font-weight: bold; font-size: 0.7em; border: 1px solid #ff0000; padding: 0 4px; margin-right: 5px; }
-        
+        .del-btn { background: red; color: white; border: none; padding: 0 5px; font-size: 0.6em; cursor: pointer; float: right; margin-left: 10px; }
         #result { margin-top: 15px; padding: 15px; border: 1px solid #000; background: #f9f9f9; white-space: pre-wrap; display: none; font-size: 0.8em; }
         .forgot-pass { display: block; text-align: center; font-size: 0.65em; margin-top: 10px; cursor: pointer; text-decoration: underline; color: #555; }
+        #settings-panel { display: none; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #000; }
     </style>
 </head>
 <body>
 
-<!-- PANEL LOGOWANIA -->
 <div class="main-wrapper" id="auth-ui">
     <div class="container">
         <div class="header-title">CLO-SCRIPT</div>
@@ -56,7 +49,6 @@
     </div>
 </div>
 
-<!-- GENERATOR -->
 <div class="main-wrapper" id="generator-ui" style="display: none;">
     <div class="container">
         <div class="header-title">CLO-SCRIPT</div>
@@ -69,13 +61,21 @@
     </div>
 </div>
 
-<!-- CZAT -->
 <div class="main-wrapper" id="chat-ui" style="display: none;">
     <div class="container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span style="font-size: 0.7em;">ZALOGOWANY: <b id="userDisplay"></b></span>
-            <button id="logoutBtn" style="width: auto; padding: 5px 10px; font-size: 0.5em; background: red; border:none;">WYLOGUJ</button>
+            <span style="font-size: 0.7em;">USER: <b id="userDisplay"></b></span>
+            <div>
+                <button onclick="toggleSettings()" style="width:auto; padding:3px 8px; font-size:0.5em; background:#eee; color:#000; border:1px solid #000;">USTAWIENIA ⚙️</button>
+                <button id="logoutBtn" style="width: auto; padding: 5px 10px; font-size: 0.5em; background: red; border:none; margin-left:5px;">WYLOGUJ</button>
+            </div>
         </div>
+
+        <div id="settings-panel">
+            <input type="text" id="newNickInput" placeholder="NOWY NICK">
+            <button id="updateNickBtn" style="font-size: 0.6em; padding: 10px; margin-bottom: 10px;">ZMIEŃ NICK</button>
+        </div>
+
         <div id="chat-window"></div>
         <div style="display: flex; gap: 5px;">
             <input type="text" id="chatInput" placeholder="WIADOMOŚĆ..." style="margin:0;">
@@ -87,7 +87,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
     import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
     const firebaseConfig = {
@@ -102,12 +102,18 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    const ADMIN_EMAIL = "boorkopasz@gmail.com";
 
     window.showTab = (t) => {
         document.getElementById('formLogin').style.display = t === 'login' ? 'block' : 'none';
         document.getElementById('formReg').style.display = t === 'reg' ? 'block' : 'none';
         document.getElementById('tabLogin').classList.toggle('active', t === 'login');
         document.getElementById('tabReg').classList.toggle('active', t === 'reg');
+    };
+
+    window.toggleSettings = () => {
+        const p = document.getElementById('settings-panel');
+        p.style.display = p.style.display === 'block' ? 'none' : 'block';
     };
 
     onAuthStateChanged(auth, (user) => {
@@ -142,13 +148,15 @@
         catch (e) { alert("BŁĄD LOGOWANIA: " + e.message); }
     };
 
+    document.getElementById('updateNickBtn').onclick = async () => {
+        const n = document.getElementById('newNickInput').value.trim();
+        if (n) { await updateProfile(auth.currentUser, { displayName: n }); alert("NICK ZMIENIONY!"); location.reload(); }
+    };
+
     document.getElementById('resetBtn').onclick = async () => {
         const email = document.getElementById('loginEmail').value.trim();
-        if (!email) return alert("Wpisz swój e-mail, aby otrzymać link do resetu!");
-        try {
-            await sendPasswordResetEmail(auth, email);
-            alert("Wysłano link do resetu hasła na e-mail: " + email);
-        } catch (e) { alert("BŁĄD: " + e.message); }
+        if (!email) return alert("Wpisz e-mail!");
+        try { await sendPasswordResetEmail(auth, email); alert("LINK WYSŁANY!"); } catch (e) { alert(e.message); }
     };
 
     document.getElementById('logoutBtn').onclick = () => signOut(auth).then(() => location.reload());
@@ -170,14 +178,19 @@
         onSnapshot(q, (snap) => {
             const win = document.getElementById('chat-window');
             win.innerHTML = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                const isAdmin = d.email === "boorkopasz@gmail.com" ? '<span class="admin-label">ADMIN</span>' : '';
-                win.innerHTML += `<div class="msg">${isAdmin}<span class="msg-author">${d.author}:</span><span>${d.text}</span></div>`;
+            snap.forEach(mDoc => {
+                const d = mDoc.data();
+                const isAdminMsg = d.email === ADMIN_EMAIL;
+                const isCurrentUserAdmin = auth.currentUser.email === ADMIN_EMAIL;
+                const adminTag = isAdminMsg ? '<span class="admin-label">ADMIN</span>' : '';
+                const delBtn = isCurrentUserAdmin ? `<button class="del-btn" onclick="window.del('${mDoc.id}')">X</button>` : '';
+                win.innerHTML += `<div class="msg">${delBtn}${adminTag}<span class="msg-author">${d.author}:</span><span>${d.text}</span></div>`;
             });
             win.scrollTop = win.scrollHeight;
         });
     }
+
+    window.del = (id) => confirm("USUNĄĆ?") && deleteDoc(doc(db, "messages", id));
 
     document.getElementById('genBtn').onclick = async () => {
         const file = document.getElementById('imageInput').files[0];
