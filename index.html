@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLO-SCRIPT AI | RECOVERY MODE</title>
+    <style>
+        /* Zachowuję Twój styl, dodaję tylko małe poprawki dla linku resetu */
+        body { font-family: 'Courier New', Courier, monospace; background: #fff url('image_1.png') no-repeat center center fixed; background-size: cover; color: #000; margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .main-wrapper { width: 100%; max-width: 600px; margin-bottom: 25px; }
+        .container { background: rgba(255, 255, 255, 0.96); padding: 25px; border: 2px solid #000; box-shadow: 8px 8px 0px #000; }
+        .header-title { font-size: 1.8em; font-weight: bold; text-align: center; margin-bottom: 15px; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 10px; border: 1px solid #000; background: #eee; cursor: pointer; text-align: center; font-weight: bold; font-size: 0.7em; }
+        .tab.active { background: #000; color: #fff; }
+
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #000; box-sizing: border-box; font-family: 'Courier New'; outline: none; }
+        button { width: 100%; background: #000; color: #fff; border: 1px solid #000; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        
+        #chat-window { height: 350px; background: #000; color: #fff; padding: 15px; overflow-y: auto; border: 1px solid #000; margin-bottom: 10px; }
+        .msg { margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 6px; }
+        .msg-author { font-weight: bold; color: #00ff00; text-transform: uppercase; margin-right: 8px; font-size: 0.85em; }
+        .admin-label { color: #ff0000; font-weight: bold; font-size: 0.7em; border: 1px solid #ff0000; padding: 0 4px; margin-right: 8px; }
+
+        /* Styl dla linku resetowania */
+        .forgot-pass { display: block; text-align: center; font-size: 0.65em; margin-top: 10px; cursor: pointer; text-decoration: underline; color: #555; }
+        .forgot-pass:hover { color: #000; }
+
+        #settings-panel { display: none; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #000; }
+        #result { margin-top: 15px; padding: 15px; border: 1px solid #000; background: #f9f9f9; white-space: pre-wrap; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper" id="generator-ui" style="display: none;">
+    <div class="container">
+        <div class="header-title">AI GENERATOR</div>
+        <input type="file" id="imageInput" accept="image/*">
+        <input type="text" id="sizeInput" placeholder="ROZMIAR">
+        <textarea id="userNotes" placeholder="DODATKOWE INFO..."></textarea>
+        <button id="genBtn">GENERUJ OPIS</button>
+        <div id="status" style="text-align:center; margin-top:10px; font-weight:bold; font-size: 0.7em;"></div>
+        <div id="result"></div>
+    </div>
+</div>
+
+<div class="main-wrapper" id="auth-ui">
+    <div class="container">
+        <div class="header-title">LOGOWANIE</div>
+        <div class="tabs">
+            <div id="tabLogin" class="tab active" onclick="showTab('login')">WEJŚCIE</div>
+            <div id="tabReg" class="tab" onclick="showTab('reg')">REJESTRACJA</div>
+        </div>
+        <div id="formLogin">
+            <input type="email" id="loginEmail" placeholder="TWÓJ GMAIL">
+            <input type="password" id="loginPass" placeholder="HASŁO">
+            <button id="loginBtn">ZALOGUJ</button>
+            <span class="forgot-pass" id="resetBtn">Zapomniałeś hasła? Kliknij tutaj.</span>
+        </div>
+        <div id="formReg" style="display: none;">
+            <input type="text" id="regNick" placeholder="NICK">
+            <input type="email" id="regEmail" placeholder="GMAIL">
+            <input type="password" id="regPass" placeholder="HASŁO (min. 6 znaków)">
+            <button id="regBtn">STWÓRZ KONTO</button>
+        </div>
+    </div>
+</div>
+
+<div class="main-wrapper" id="chat-ui" style="display: none;">
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+                <span style="font-weight:bold; font-size: 0.75em;">NICK: <span id="userDisplay" style="color:blue"></span></span>
+                <button onclick="toggleSettings()" style="width:auto; padding:3px 8px; font-size:0.6em; background:#eee; color:#000; border:1px solid #000; margin-left:10px;">USTAWIENIA ⚙️</button>
+            </div>
+            <button id="logoutBtn" style="width: auto; padding: 5px 10px; font-size: 0.6em; background: red; border:none;">WYLOGUJ</button>
+        </div>
+
+        <div id="settings-panel">
+            <input type="text" id="newNickInput" placeholder="Nowy nick" style="font-size: 0.8em;">
+            <button id="updateNickBtn" style="font-size: 0.6em; padding: 10px; margin-bottom: 10px;">ZMIEŃ NICK</button>
+            <input type="password" id="newPassInput" placeholder="Nowe hasło" style="font-size: 0.8em;">
+            <button id="updatePassBtn" style="font-size: 0.6em; padding: 10px;">ZMIEŃ HASŁO</button>
+        </div>
+
+        <div id="chat-window"></div>
+        <div style="display: flex; gap: 5px;">
+            <input type="text" id="chatInput" placeholder="WIADOMOŚĆ..." style="margin:0; background:#000; color:#fff;">
+            <button id="sendBtn" style="width: 80px; margin:0;">OK</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, updatePassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCoqVckP7wORrT7_4S_RKt3_B78s3Hr9h4",
+        authDomain: "clo-script.firebaseapp.com",
+        projectId: "clo-script",
+        storageBucket: "clo-script.firebasestorage.app",
+        messagingSenderId: "951625390537",
+        appId: "1:951625390537:web:a1d8ff99c5d8c2719d3018"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const ADMIN_EMAIL = "boorkopasz@gmail.com";
+
+    // RESET HASŁA
+    document.getElementById('resetBtn').onclick = async () => {
+        const email = document.getElementById('loginEmail').value.trim();
+        if (!email) return alert("Najpierw wpisz swój e-mail w polu powyżej!");
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert("Link do resetowania hasła został wysłany na Twój e-mail: " + email);
+        } catch (e) { alert("Błąd: " + e.message); }
+    };
+
+    window.showTab = (type) => {
+        document.getElementById('formLogin').style.display = type === 'login' ? 'block' : 'none';
+        document.getElementById('formReg').style.display = type === 'reg' ? 'block' : 'none';
+        document.getElementById('tabLogin').classList.toggle('active', type === 'login');
+        document.getElementById('tabReg').classList.toggle('active', type === 'reg');
+    };
+
+    window.toggleSettings = () => {
+        const p = document.getElementById('settings-panel');
+        p.style.display = p.style.display === 'block' ? 'none' : 'block';
+    };
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById('auth-ui').style.display = 'none';
+            document.getElementById('generator-ui').style.display = 'block';
+            document.getElementById('chat-ui').style.display = 'block';
+            document.getElementById('userDisplay').innerText = user.displayName || user.email.split('@')[0];
+            loadMessages();
+        } else {
+            document.getElementById('auth-ui').style.display = 'block';
+            document.getElementById('generator-ui').style.display = 'none';
+            document.getElementById('chat-ui').style.display = 'none';
+        }
+    });
+
+    document.getElementById('regBtn').onclick = async () => {
+        const nick = document.getElementById('regNick').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const pass = document.getElementById('regPass').value;
+        try {
+            const res = await createUserWithEmailAndPassword(auth, email, pass);
+            await updateProfile(res.user, { displayName: nick });
+            location.reload();
+        } catch (e) { alert("Błąd: " + e.message); }
+    };
+
+    document.getElementById('loginBtn').onclick = () => {
+        signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value.trim(), document.getElementById('loginPass').value).catch(e => alert("Błąd logowania!"));
+    };
+
+    document.getElementById('logoutBtn').onclick = () => signOut(auth).then(() => location.reload());
+
+    document.getElementById('updateNickBtn').onclick = async () => {
+        const n = document.getElementById('newNickInput').value.trim();
+        if (n) { await updateProfile(auth.currentUser, { displayName: n }); alert("Nick zmieniony!"); location.reload(); }
+    };
+
+    document.getElementById('updatePassBtn').onclick = async () => {
+        const p = document.getElementById('newPassInput').value;
+        if (p.length >= 6) { await updatePassword(auth.currentUser, p); alert("Hasło zmienione!"); }
+    };
+
+    document.getElementById('sendBtn').onclick = async () => {
+        const txt = document.getElementById('chatInput').value;
+        if (!txt.trim()) return;
+        await addDoc(collection(db, "messages"), {
+            text: txt,
+            authorName: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
+            authorEmail: auth.currentUser.email,
+            createdAt: serverTimestamp()
+        });
+        document.getElementById('chatInput').value = "";
+    };
+
+    function loadMessages() {
+        const q = query(collection(db, "messages"), orderBy("createdAt", "asc"), limit(50));
+        onSnapshot(q, (snapshot) => {
+            const win = document.getElementById('chat-window');
+            win.innerHTML = "";
+            snapshot.forEach(mDoc => {
+                const d = mDoc.data();
+                const isMsgAdmin = d.authorEmail === ADMIN_EMAIL;
+                const isAdminUser = auth.currentUser.email === ADMIN_EMAIL;
+                const adminTag = isMsgAdmin ? '<span class="admin-label">ADMIN</span>' : '';
+                const delBtn = isAdminUser ? `<button class="del-btn" onclick="window.del('${mDoc.id}')">X</button>` : '';
+                win.innerHTML += `<div class="msg">${delBtn} ${adminTag} <span class="msg-author">${d.authorName}:</span> <span>${d.text}</span></div>`;
+            });
+            win.scrollTop = win.scrollHeight;
+        });
+    }
+
+    window.del = (id) => confirm("Usunąć?") && deleteDoc(doc(db, "messages", id));
+
+    // GENERATOR AI
+    document.getElementById('genBtn').onclick = async () => {
+        const f = document.getElementById('imageInput').files[0];
+        if (!f) return alert("Zdjęcie!");
+        document.getElementById('status').innerText = "AI MYŚLI...";
+        try {
+            const genAI = new GoogleGenerativeAI("AIzaSyCf1frwAF1OAOFVngfNSPEwLDKKUBXmCQw");
+            const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+            const reader = new FileReader();
+            reader.readAsDataURL(f);
+            reader.onloadend = async () => {
+                const b64 = reader.result.split(',')[1];
+                const res = await model.generateContent([{ inlineData: { data: b64, mimeType: f.type } }, { text: "Opisz techwear Vinted, rozmiar: " + document.getElementById('sizeInput').value }]);
+                document.getElementById('result').innerText = (await res.response).text();
+                document.getElementById('result').style.display = "block";
+                document.getElementById('status').innerText = "GOTOWE.";
+            };
+        } catch (e) { document.getElementById('status').innerText = "BŁĄD."; }
+    };
+</script>
+</body>
+</html>
