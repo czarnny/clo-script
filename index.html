@@ -16,15 +16,15 @@
         input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #000; box-sizing: border-box; font-family: 'Courier New'; outline: none; }
         button { width: 100%; background: #000; color: #fff; border: 1px solid #000; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         #chat-window { height: 350px; background: #000; color: #fff; padding: 15px; overflow-y: auto; border: 1px solid #000; margin-bottom: 10px; }
-        .msg { margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px; font-size: 0.85em; position: relative; overflow: hidden; }
+        .msg { margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px; font-size: 0.85em; position: relative; word-wrap: break-word; }
         .msg-author { font-weight: bold; color: #00ff00; margin-right: 5px; }
         .admin-label { color: #ff0000; font-weight: bold; font-size: 0.7em; border: 1px solid #ff0000; padding: 0 4px; margin-right: 5px; }
         .del-btn { background: red; color: white; border: none; padding: 0 5px; font-size: 0.6em; cursor: pointer; float: right; margin-left: 10px; }
-        .chat-img { max-width: 200px; max-height: 200px; border: 1px solid #00ff00; margin-top: 5px; display: block; border-radius: 4px; cursor: pointer; }
+        .chat-img { max-width: 180px; max-height: 250px; border: 1px solid #00ff00; margin-top: 5px; display: block; cursor: pointer; }
         #result { margin-top: 15px; padding: 15px; border: 1px solid #000; background: #f9f9f9; white-space: pre-wrap; display: none; font-size: 0.8em; }
         .forgot-pass { display: block; text-align: center; font-size: 0.65em; margin-top: 10px; cursor: pointer; text-decoration: underline; color: #555; }
         #settings-panel { display: none; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #000; }
-        .file-label { display: block; text-align: center; background: #eee; border: 1px solid #000; padding: 8px; font-size: 0.6em; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .file-label { display: block; text-align: center; background: #eee; border: 1px solid #000; padding: 8px; font-size: 0.65em; font-weight: bold; cursor: pointer; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -83,7 +83,7 @@
                 <button id="sendBtn" style="width: 70px; margin:0; font-size: 0.6em;">OK</button>
             </div>
             <label class="file-label">
-                📷 WYŚLIJ FOTKĘ
+                📷 DODAJ FOTKĘ NA CZAT
                 <input type="file" id="chatFile" accept="image/*" style="display:none">
             </label>
         </div>
@@ -152,13 +152,12 @@
     document.getElementById('logoutBtn').onclick = () => signOut(auth).then(() => location.reload());
 
     document.getElementById('sendBtn').onclick = async () => {
-        const msg = document.getElementById('chatInput').value;
-        if (!msg.trim()) return;
-        await addDoc(collection(db, "messages"), { text: msg, author: auth.currentUser.displayName, email: auth.currentUser.email, createdAt: serverTimestamp() });
+        const val = document.getElementById('chatInput').value;
+        if (!val.trim()) return;
+        await addDoc(collection(db, "messages"), { text: val, author: auth.currentUser.displayName, email: auth.currentUser.email, createdAt: serverTimestamp() });
         document.getElementById('chatInput').value = "";
     };
 
-    // FUNKCJA NAPRAWCZA - ZMNIEJSZANIE ZDJĘĆ
     document.getElementById('chatFile').onchange = function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -167,14 +166,14 @@
             const img = new Image();
             img.onload = async function() {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 400; // Zmniejszamy fotkę do 400px
-                const scaleSize = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH;
-                canvas.height = img.height * scaleSize;
+                const MAX_W = 350;
+                const scale = MAX_W / img.width;
+                canvas.width = MAX_W;
+                canvas.height = img.height * scale;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Kompresja do 60% jakości
-                await addDoc(collection(db, "messages"), { imgData: dataUrl, author: auth.currentUser.displayName, email: auth.currentUser.email, createdAt: serverTimestamp() });
+                const compressed = canvas.toDataURL('image/jpeg', 0.5);
+                await addDoc(collection(db, "messages"), { imgData: compressed, author: auth.currentUser.displayName, email: auth.currentUser.email, createdAt: serverTimestamp() });
             };
             img.src = event.target.result;
         };
@@ -182,18 +181,18 @@
     };
 
     function loadChat() {
-        const q = query(collection(db, "messages"), orderBy("createdAt", "asc"), limit(40));
+        const q = query(collection(db, "messages"), orderBy("createdAt", "asc"), limit(30));
         onSnapshot(q, (snap) => {
             const win = document.getElementById('chat-window');
             win.innerHTML = "";
             snap.forEach(mDoc => {
                 const d = mDoc.data();
-                const isAdminMsg = d.email === ADMIN_EMAIL;
-                const isCurrentUserAdmin = auth.currentUser.email === ADMIN_EMAIL;
-                const delBtn = isCurrentUserAdmin ? `<button class="del-btn" onclick="window.del('${mDoc.id}')">X</button>` : '';
-                const adminTag = isAdminMsg ? '<span class="admin-label">ADMIN</span>' : '';
+                const isAdm = d.email === ADMIN_EMAIL;
+                const isMeAdm = auth.currentUser.email === ADMIN_EMAIL;
+                const delBtn = isMeAdm ? `<button class="del-btn" onclick="window.del('${mDoc.id}')">X</button>` : '';
+                const tag = isAdm ? '<span class="admin-label">ADMIN</span>' : '';
                 let content = d.text ? `<span>${d.text}</span>` : `<img src="${d.imgData}" class="chat-img" onclick="window.open(this.src)">`;
-                win.innerHTML += `<div class="msg">${delBtn}${adminTag}<span class="msg-author">${d.author}:</span>${content}</div>`;
+                win.innerHTML += `<div class="msg">${delBtn}${tag}<span class="msg-author">${d.author}:</span>${content}</div>`;
             });
             win.scrollTop = win.scrollHeight;
         });
@@ -219,6 +218,8 @@
             };
         } catch (e) { alert("BŁĄD AI: " + e.message); }
     };
+
+    window.del = (id) => { if(confirm("USUNĄĆ?")) deleteDoc(doc(db, "messages", id)); };
 </script>
 </body>
 </html>
