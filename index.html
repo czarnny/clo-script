@@ -212,23 +212,47 @@
 
     window.del = (id) => { if(confirm("USUNĄĆ?")) deleteDoc(doc(db, "messages", id)); };
 
+    // NAPRAWIONY GENERATOR OPISÓW
     document.getElementById('genBtn').onclick = async () => {
         const file = document.getElementById('imageInput').files[0];
         if (!file) return alert("Wybierz zdjęcie!");
         document.getElementById('status').innerText = "AI PRACUJE...";
+        
         try {
             const genAI = new GoogleGenerativeAI("AIzaSyCf1frwAF1OAOFVngfNSPEwLDKKUBXmCQw");
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onloadend = async () => {
-                const base64 = reader.result.split(',')[1];
-                const res = await model.generateContent([{ inlineData: { data: base64, mimeType: file.type } }, { text: "Opisz techwear na Vinted, rozmiar: " + document.getElementById('sizeInput').value + ". " + document.getElementById('userNotes').value }]);
-                document.getElementById('result').innerText = (await res.response).text();
-                document.getElementById('result').style.display = "block";
-                document.getElementById('status').innerText = "GOTOWE.";
+                const base64Data = reader.result.split(',')[1];
+                const promptText = "Opisz ten przedmiot techwear na Vinted. Rozmiar: " + document.getElementById('sizeInput').value + ". Dodatkowe info: " + document.getElementById('userNotes').value;
+                
+                try {
+                    const result = await model.generateContent([
+                        {
+                            inlineData: {
+                                data: base64Data,
+                                mimeType: file.type
+                            }
+                        },
+                        { text: promptText }
+                    ]);
+                    
+                    const response = await result.response;
+                    document.getElementById('result').innerText = response.text();
+                    document.getElementById('result').style.display = "block";
+                    document.getElementById('status').innerText = "GOTOWE.";
+                } catch (genErr) {
+                    console.error(genErr);
+                    alert("BŁĄD GENEROWANIA: " + genErr.message);
+                    document.getElementById('status').innerText = "BŁĄD.";
+                }
             };
-        } catch (e) { alert("BŁĄD AI: " + e.message); }
+        } catch (e) { 
+            alert("BŁĄD KONFIGURACJI: " + e.message); 
+            document.getElementById('status').innerText = "BŁĄD.";
+        }
     };
 </script>
 </body>
