@@ -54,7 +54,7 @@
 
 <div class="main-wrapper" id="generator-ui" style="display: none;">
     <div class="container">
-        <div class="header-title">CLO-SCRIPT</div>
+        <div class="header-title">CLO-SCRIPT AI</div>
         <input type="file" id="imageInput" accept="image/*">
         <input type="text" id="sizeInput" placeholder="ROZMIAR">
         <textarea id="userNotes" placeholder="DODATKOWE INFO..."></textarea>
@@ -150,6 +150,13 @@
         } catch (err) { alert("BŁĄD: " + err.message); }
     };
 
+    document.getElementById('resetBtn').onclick = async () => {
+        const email = document.getElementById('loginEmail').value;
+        if (!email) return alert("PODAJ EMAIL!");
+        try { await sendPasswordResetEmail(auth, email); alert("LINK WYSŁANY!"); }
+        catch (e) { alert("BŁĄD: " + e.message); }
+    };
+
     document.getElementById('updateNickBtn').onclick = async () => {
         const n = document.getElementById('newNickInput').value.trim();
         if (n && auth.currentUser) {
@@ -212,17 +219,17 @@
 
     window.del = (id) => { if(confirm("USUNĄĆ?")) deleteDoc(doc(db, "messages", id)); };
 
-    // ZMIANA MODELU NA 1.5-FLASH-8B-001 (Wersja 3.1)
+    // GENERATOR - NOWY KLUCZ I MODEL GEMINI-3-FLASH-PREVIEW
     document.getElementById('genBtn').onclick = async () => {
         const fileInput = document.getElementById('imageInput');
         const file = fileInput.files[0];
         if (!file) return alert("Wybierz zdjęcie!");
         
-        document.getElementById('status').innerText = "AI PRACUJE...";
+        document.getElementById('status').innerText = "AI 3-FLASH PRACUJE...";
         
         try {
-            const genAI = new GoogleGenerativeAI("AIzaSyCf1frwAF1OAOFVngfNSPEwLDKKUBXmCQw");
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b-001" });
+            const genAI = new GoogleGenerativeAI("AIzaSyDtpLMdEWNiygBFI9B8wBuNfxK7MyS4jKk");
+            const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
             
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -246,13 +253,13 @@
                     document.getElementById('result').style.display = "block";
                     document.getElementById('status').innerText = "GOTOWE.";
                 } catch (genErr) {
-                    console.error("Błąd generowania:", genErr);
-                    alert("BŁĄD GENEROWANIA: " + genErr.message);
+                    console.error("Błąd modelu:", genErr);
+                    alert("BŁĄD MODELU: " + genErr.message);
                     document.getElementById('status').innerText = "BŁĄD.";
                 }
             };
         } catch (e) { 
-            alert("BŁĄD KONFIGURACJI: " + e.message); 
+            alert("BŁĄD KRYTYCZNY: " + e.message); 
             document.getElementById('status').innerText = "BŁĄD.";
         }
     };
